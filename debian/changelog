@@ -1,0 +1,348 @@
+seabios (1.14.0-2) unstable; urgency=medium
+
+  * install vgabios-ramfb.bin, not romfb
+    (Closes: #972482, #976806, LP: #1899546)
+  * mention closing of #964663 by 1.14.0
+  * d/control: update Standards-Version to 4.5.1 (no changes)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 08 Dec 2020 14:52:59 +0300
+
+seabios (1.14.0-1) unstable; urgency=medium
+
+  [ Aurelien Jarno ]
+  * Remove myself from maintainers
+
+  [ Michael Tokarev ]
+  * new upstream release (1.14.0) (Closes: #964663)
+  * actually enable vgabios-bochs-display.bin, and also enable vgabios-romfb.bin
+  * set more "=n" flags for stripped-down bios.bin
+  * strip trailing spaces from d/changelog
+  * switch from d/compat 9 to debhelper-compat 12
+  * bump Standards-Version to 4.5.0, no changes
+  * reorganize d/rules so that all */*-indep/*-arch targets are available
+  * reorganize d/rules to run all variants sequentially but each variant
+    in parallel, so that less clutter will be seen on output
+  * d/control: use https for homepage
+  * d/control: Rules-Requires-Root: no
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 10 Aug 2020 20:53:12 +0300
+
+seabios (1.13.0-1) unstable; urgency=medium
+
+  * new upstream release 1.13.0 (Closes: #931346)
+  * remove generated .hex files in clean, regenerate them properly
+  * build vgabios-ati and vgabios-bochs-display
+  * disable ATA_DMA (Closes: #934134)
+  * priority "extra" is replaced by "optional"
+  * Std-Version: 4.4.1 (no changes needed)
+  * switch to python3 (Closes: #938457)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Thu, 12 Dec 2019 19:51:50 +0300
+
+seabios (1.12.0-1) unstable; urgency=medium
+
+  * new upstream release
+    Closes: #901462
+  * do not move away .hex files, just remove them (Closes: #901547)
+  * update d/watch to point to https://www.seabios.org/downloads/
+  * d/rules: update bios build options (remove more stuff for 128k)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Fri, 21 Dec 2018 21:06:17 +0300
+
+seabios (1.10.2-1) unstable; urgency=medium
+
+  * new upstream stable/bugfix release,
+    required for qemu 2.8.1+ due to ahci changes,
+    plus fixes for guest resume from S3
+    and ps/2 keyboard/mouse handling
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 03 Apr 2017 13:47:29 +0300
+
+seabios (1.10.1-1) unstable; urgency=medium
+
+  * new upstream release
+  * ensure no shipped firmware blobs are used, so that all
+    iasl sources are being built during package build
+  * disable BOOTSPLASH code for 128k (Closes: #846686)
+  * pass EXTRAVERSION to upstream make (Closes: #842203)
+  * verify that .git does not exist and .version exists,
+    to build version info in a reliable way
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 26 Dec 2016 23:43:43 +0300
+
+seabios (1.9.3-2) unstable; urgency=medium
+
+  * build-add-fno-pie-to-the-gcc-flags-when-available.patch
+    patch from upstream to disable pie code which is now enabled
+    by default on Debian and makes seabios FTBFS (Closes: #841546)
+  * also enable -fno-pie for optionrom
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 25 Oct 2016 20:07:09 +0300
+
+seabios (1.9.3-1) unstable; urgency=medium
+
+  * update optionrom files from qemu-2.7.
+    This includes optionrom_dma.bin
+  * update to new upstream (1.9.3) release (Closes: #841985)
+  * strip a few new features from seabios-128k (Closes: #800429)
+    remove stale comment in there (Closes: #800426)
+  * update Standards-Version to 3.9.8 (no changes needed)
+  * update debhelper compat level to 9
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 25 Oct 2016 13:58:43 +0300
+
+seabios (1.8.2-1) unstable; urgency=medium
+
+  * new upstream (minor) release (1.8.2)
+  * add vgabios-virtio.bin (new in 1.8.2)
+  * remove some leftovers from d/rules
+  * set VERSION to $(DEB_VENDOR)-$(DEB_VERSION)
+    and make build reproducible (Closes: #782905)
+  * update d/watch (Closes: #786413)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Wed, 17 Jun 2015 12:00:25 +0300
+
+seabios (1.8.1-2) unstable; urgency=medium
+
+  * reupload to unstable (previous upload was to experimental)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 28 Apr 2015 16:46:53 +0300
+
+seabios (1.8.1-1) unstable; urgency=medium
+
+  * new upstream release (1.8.1)
+  * update debian/optionrom up to qemu commit b466e1731be837
+    (Thu Dec 11 02:17:03 2014 +0100)
+  * update standards-version (no changes needed)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sat, 18 Apr 2015 16:21:20 +0300
+
+seabios (1.7.5-1) unstable; urgency=medium
+
+  * new upstream release
+  * dropped all patches taken from upstream
+  * disabled more features (XEN & USB_UAS) from the 128k bios build to fit
+  * set upstream source URL (Closes: #740471)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sat, 31 May 2014 12:29:13 +0400
+
+seabios (1.7.4-4) unstable; urgency=low
+
+  * apply vgabios-attempt-to-detect-old-x86emu-and-force-a-fault.diff:
+    a patch from upstream to work around apparently broken x86 emulation
+    in some software.  (Closes: #737142)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 17 Feb 2014 21:35:59 +0400
+
+seabios (1.7.4-3) unstable; urgency=low
+
+  * allow seabios to be built using more recent iasl, finally,
+    and enable acpica-tools build-depend alternative.  This has
+    actually been fixed long ago (the patch is in 1.7.1), even
+    before the version against which #707454 has been reported,
+    but the fix required a new iasl option which were available
+    only in next iasl release.  But no one actually noticed this.
+    (Gladly Closes: #707454)
+  * update standards-version to 3.9.5 (no changes needed)
+  * replace $(PWD) with $(CURDIR) in d/rules (fixes build failure)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Fri, 07 Feb 2014 00:38:29 +0400
+
+seabios (1.7.4-2) unstable; urgency=low
+
+  * actually update optionrom/multiboot.S from the commit indicated
+    in optionrom/README file. (Closes: #736902)
+  * build all variants in build/*, refresh debian/rules
+  * added bios-256k.bin variant for qemu > 1.7, and reduce regular
+    ("small) bios (for qemu <= 1.7) to be 128Kb in size again
+  * vgabios-Make-sure-exported-structs-use-PACKED.diff: patch from
+    upstream to fix interface between vgabios and real world
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Thu, 06 Feb 2014 23:31:04 +0400
+
+seabios (1.7.4-1) unstable; urgency=low
+
+  * new upstream release (1.7.4)
+  * remove all patches (upstreamed)
+  * acpi tables are now in $out/src/fw/ not in $out/
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Thu, 16 Jan 2014 15:50:54 +0400
+
+seabios (1.7.3-3) unstable; urgency=low
+
+  * applied HDTV video modes patch from upstream
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Fri, 06 Dec 2013 02:50:15 +0400
+
+seabios (1.7.3-2) unstable; urgency=low
+
+  [ Michael Tokarev ]
+  * update to upstream 1.7.3.2 bugfix release
+  * Multi-Arch: foreign (vs allowed) (Closes: #728475)
+  * move optionrom/*.bin to the main directory (with compat symlinks)
+  * update optionrom files to ones from qemu-1.7
+  * simplify debian/optionrom/Makefile
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sun, 24 Nov 2013 00:40:53 +0400
+
+seabios (1.7.3-1) unstable; urgency=low
+
+  * new upstream release (1.7.3)
+  * Multi-Arch: allowed
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 08 Jul 2013 21:34:44 +0400
+
+seabios (1.7.2-3) unstable; urgency=low
+
+  * update to the next upstream pointpoint-release (1.7.2.2)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 28 May 2013 10:54:39 +0400
+
+seabios (1.7.2-2) unstable; urgency=low
+
+  * bump Standards-Version to 3.9.4 (no changes needed)
+  * add a versioned dependency on iasl (<< 20130214), see #707454
+  * add upstream 1.7.2.1 (as a patch since upstream didn't release source)
+    (Closes: #707645)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Mon, 13 May 2013 19:45:38 +0400
+
+seabios (1.7.2-1) unstable; urgency=low
+
+  * new upstream release:
+   - Support for ICH9 host chipset ("q35") on emulators
+   - Support for booting from LSI MegaRAID SAS controllers
+   - Support for using the ACPI PM timer on emulators
+   - Improved Geode VGA BIOS support.
+   - Several bug fixes
+  * build main bios after all vgabioses
+  * ship acpi-dsdt.aml and q35-acpi-dsdt.aml (*dsdt.aml) too
+    (needed by new qemu)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sat, 19 Jan 2013 14:48:28 +0400
+
+seabios (1.7.1-1) unstable; urgency=low
+
+  * updated to new minor upstream release (1.7.1):
+   - native scsi boot support (Closes: #652530)
+   - usb-attached scsi boot support
+   - Xen support (Closes: #678042)
+   - better integration with qemu
+   - some bugfixes
+  * removed fix-==-in-shell.patch (not needed anymore)
+  * updated debian/rules (adapted for upstream changes a bit)
+  * updated multiboot.S and fw_cfg.h in debian/optionrom from qemu-1.3
+  * updated debian/control VCS links to canonical anonscm.debian.org ones
+  * break old qemu-system, not conflict with it, and mention qemu-kvm too
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sat, 29 Dec 2012 19:48:28 +0400
+
+seabios (1.7.0-1) unstable; urgency=low
+
+  * new upstream release (1.7.0), featuring vgabios.
+  * drop 1.6.3.1 patch
+  * do not require root in clean target
+  * split build procedure into several targets, move bios.bin
+    out of out/ directory (preparing for the next change), and
+    change clean target accordingly
+  * build and ship vgabios-{cirrus,stdvga,vmware,qxl,isavga}.bin
+  * patches/fix-==-in-shell.patch -- fix build error with dash
+  * move all optionrom files taken from qemu into debian/optionrom,
+    instead of having them as patches in debian/patches.  While at
+    it, update optionroms from current qemu (1.1) and add
+    vapic.bin => kvmvapic.bin compatibility symlink.
+  * add myself to uploaders
+  * bump Standards-Version to 3.9.3 (no changes needed)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 17 Apr 2012 14:22:01 +0400
+
+seabios (1.6.3-2) unstable; urgency=low
+
+  * Add patch from 1.6.3.1 to fix usb boot paths.
+
+ -- Vagrant Cascadian <vagrant@debian.org>  Fri, 02 Dec 2011 19:36:13 -0800
+
+seabios (1.6.3-1) experimental; urgency=low
+
+  [ Michael Tokarev ]
+  * New upstream release (1.6.3, jumped from 0.6.2).
+    Upstream now uses kbuild-like configuration.
+    Use distclean target not clean, to remove .config too.
+  * Removed debian/patches/05_struct_bregs.patch (applied upstream).
+  * Removed usage of $(CURDIR) from "some" debian/rules
+    (it was used inconsistently and is not needed anyway).
+
+  [ Vagrant Cascadian ]
+  * debian/control: Add Vcs-* headers.
+  * debian/control: Add Homepage header.
+  * debian/rules: Add dummy build-arch and build-indep targets.
+  * Update optionrom patches.
+
+ -- Vagrant Cascadian <vagrant@debian.org>  Mon, 28 Nov 2011 23:22:34 -0800
+
+seabios (0.6.1.2-3) unstable; urgency=low
+
+  * Add patches/05_struct_bregs.patch from upstream to fix FTBFS with
+    gcc-4.6.  Closes: bug#625000.
+  * Bump Standards-Version to 3.9.2 (no changes).
+
+ -- Aurelien Jarno <aurel32@debian.org>  Sat, 21 May 2011 11:47:36 +0200
+
+seabios (0.6.1.2-2) unstable; urgency=low
+
+  * Conflicts with qemu-system (<< 0.14.0).  Closes: bug#591780.
+  * Switch to debhelper 7.
+
+ -- Aurelien Jarno <aurel32@debian.org>  Sat, 19 Feb 2011 10:37:48 +0000
+
+seabios (0.6.1.2-1) unstable; urgency=low
+
+  * New upstream version from git tag.
+    - Fixes virtio-blk failure after reboot (Closes: #604735).
+  * Update debian/watch file.
+
+ -- Vagrant Cascadian <vagrant@debian.org>  Fri, 26 Nov 2010 17:54:44 -0800
+
+seabios (0.6.0+git20100710-2) unstable; urgency=low
+
+  * Temporarily reduce the conflicts on qemu-system due to the previous
+    upload done in unstable instead of experimental.
+
+ -- Aurelien Jarno <aurel32@debian.org>  Mon, 02 Aug 2010 22:52:36 +0200
+
+seabios (0.6.0+git20100710-1) unstable; urgency=low
+
+  * New upstream snapshot, compatible with qemu 0.13.x.
+  * Add conflicts with qemu-system (<< 0.13.0).
+  * Bump Standards-Version to 3.9.1 (no changes).
+  * Update from QEMU 0.13:
+    - 00_optionrom_buildsystem.patch
+    - 02_optionrom_linuxboot.patch
+  * Update from QEMU-KVM 0.13:
+    - 01_optionrom_extboot.patch
+
+ -- Aurelien Jarno <aurel32@debian.org>  Sun, 01 Aug 2010 21:06:30 +0200
+
+seabios (0.5.1-3) unstable; urgency=low
+
+  [ Vagrant Cascadian ]
+  * Add watch file.
+
+  [ Aurelien Jarno ]
+  * Fix PS/2 mouse in old applications.
+
+ -- Aurelien Jarno <aurel32@debian.org>  Wed, 16 Jun 2010 22:03:41 +0200
+
+seabios (0.5.1-2) unstable; urgency=low
+
+  * Update to 0.5.1-stable.
+  * Bump Standards-Version to 3.8.4 (no changes).
+
+ -- Aurelien Jarno <aurel32@debian.org>  Fri, 05 Mar 2010 20:05:31 +0100
+
+seabios (0.5.1-1) unstable; urgency=low
+
+  [ Aurelien Jarno ]
+  * Initial release (Closes: #492935).
+
+ -- Aurelien Jarno <aurel32@debian.org>  Tue, 26 Jan 2010 00:49:28 +0100

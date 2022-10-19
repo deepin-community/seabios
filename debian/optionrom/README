@@ -1,0 +1,23 @@
+README file for seabios/debian/optionrom
+
+The files in this directory are taken from qemu sources,
+git commits below.  They're from qemu and used by qemu,
+but are packaged with seabios, because the files must
+be built on x86 arch (just like seabios itself) but are
+Arch: all.  Seabios package itself is Arch: all, so it
+has no issues building some more stuff with it.  But
+qemu is Arch: any, but the only architecture where these
+files can be built is x86.  So we just move them into
+seabios package and build here.
+
+The files taken from qemu:
+
+pc-bios/optionrom
+ kvmvapic.S linuxboot.S linuxboot_dma.c multiboot.S optionrom.h
+ (inludes a trivial change for #include'ing fw_cfg.h from optionrom.h)
+include/hw/nvram/fw_cfg_keys.h
+scripts/signrom.py
+pc-bios/optionrom/extboot.S 211721f31c62cc889369da79d75c38f7297b6465 Feb 18 17:13:30 2010 +0100
+ (removed upstream)
+
+and Makefile to build it all.

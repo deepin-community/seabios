@@ -1,2 +1,2 @@
 version=3
-https://www.seabios.org/downloads seabios-(\d[^\s/]*)\.tar\.(?:xz|gz|bz2)
+https://www.seabios.org/downloads/ seabios-(\d[^\s/]*)\.tar\.(?:xz|gz|bz2)

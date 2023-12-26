@@ -2,10 +2,9 @@ Source: seabios
 Section: misc
 Priority: optional
 Maintainer: Debian QEMU Team <pkg-qemu-devel@lists.alioth.debian.org>
-Uploaders: Riku Voipio <riku.voipio@iki.fi>,
-	Michael Tokarev <mjt@tls.msk.ru>
-Build-Depends: debhelper-compat (= 12), python3, acpica-tools | iasl
-Standards-Version: 4.5.1
+Uploaders: Michael Tokarev <mjt@tls.msk.ru>
+Build-Depends: debhelper-compat (= 13), python3:any, acpica-tools | iasl
+Standards-Version: 4.6.0
 Rules-Requires-Root: no
 Vcs-Browser: https://salsa.debian.org/qemu-team/seabios
 Vcs-Git: https://salsa.debian.org/qemu-team/seabios.git
@@ -15,7 +14,6 @@ Package: seabios
 Architecture: all
 Multi-Arch: foreign
 Depends: ${misc:Depends}
-Breaks: qemu-system (<< 0.14.0), qemu-kvm (<< 0.14.0)
 Description: Legacy BIOS implementation
  SeaBIOS is a legacy BIOS implementation, aimed at supporting not only
  emulated hosts such as QEMU, but also real hardware.

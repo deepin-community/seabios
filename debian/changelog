@@ -1,3 +1,108 @@
+seabios (1.16.3-2) unstable; urgency=medium
+
+  * d/rules: turn off LSI_SCSI and DEBUG_IO for 128k bios variant.
+    these are probably the last bits which can be turned off before
+    we will start breaking old versions of qemu.  upstream qemu
+    turned off all pci devices for 128k bios variant, leaving only
+    stuff needed for -M isapc, since it dropped <1.7 machines
+    compatibility
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Thu, 30 Nov 2023 20:20:26 +0300
+
+seabios (1.16.3-1) unstable; urgency=medium
+
+  * new upstream release (rel-1.16.3)
+    this brings up a few fixes, including `ahci: handle TFES irq correctly'
+    which is needed for qemu 8.2+ with `D2H FIS when processing NCQ command'
+    commit, esp-scsi fixes, and more.
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 28 Nov 2023 12:05:35 +0300
+
+seabios (1.16.2-1) unstable; urgency=medium
+
+  * sync with upstream stable 1.16.2 release (rel-1.16.2 tag):
+    this brings up to the exactly same state as our rel-1.16.1.patch
+    did, and brings up 2 more fixes:
+    - usb: fix wrong init of keyboard/mouse's if first interface
+      is not boot protocol
+    - xen: require Xen info structure at 0x1000 to detect Xen
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Tue, 11 Apr 2023 16:08:25 +0300
+
+seabios (1.16.0-5) unstable; urgency=medium
+
+  * d/rules: vgabios.bin compatibility symlink for qemu (Closes: #1024382)
+  * update release to 1.16.1 (as a patch file since tarball is not published)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Thu, 01 Dec 2022 17:06:24 +0300
+
+seabios (1.16.0-4) unstable; urgency=medium
+
+  * set bios-microvm.bin bios size to be 128k not 256k.
+    Upstream qemu uses 128k, but for some reason I set it to 256k when
+    adding it to the debian package.  This change breaks migration between
+    qemu running with old and new bios package but only for those VMs which
+    are using this particular bios variant. In debian it is most likely the
+    still-experimental qemu-system-x86_64-microvm binary.  It is better to
+    fix this sooner instead of waiting before many VMs with this bios will
+    emerge.
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sun, 01 May 2022 14:59:52 +0300
+
+seabios (1.16.0-3) unstable; urgency=medium
+
+  * fix a FTBFS bug in previous upload (too much cleanup is no good)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sun, 01 May 2022 13:50:36 +0300
+
+seabios (1.16.0-2) unstable; urgency=medium
+
+  * d/control: switch to dh-compat=13 and use python3:any not python3
+  * d/rules: set EXTRAVERSION to have -debian suffix
+    (and cache it in build/env)
+  * d/rules: collapse rules for vgabios-*.bin and bios*.bin into
+    pattern rules with configs stored in make variables
+  * d/rules: other small tweaks
+  * d/changelog: wrap a long line in previous entry
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sun, 01 May 2022 11:32:57 +0300
+
+seabios (1.16.0-1) unstable; urgency=medium
+
+  * new upstream release
+  * d/links: remove /usr/share/seabios/optionrom/ old-compat symlinks
+    which become dangling (Closes: #1003111)
+  * d/control: remove Riku Voipio from Uploaders. Thank you Riko!
+    (Closes: #1001567)
+  * d/watch: add missing slash so it actually work
+  * d/gbp.conf: specify upstream-vcs-tag format and filter generated
+    src/fw/*.hex
+  * nogitversion.patch: stop treating existance of .git/ as alternative version
+  * d/rules: stop aborting if .git/ exists
+  * d/rules: stop runnig dh_links and dh_installdirs
+  * d/rules: reduce the clean target to one dh_clean invocation
+  * d/rules: stop running dh_strip, we do not ship regular ELF binaries
+  * d/rules: run dh_strip_nondeterminism
+  * d/rules: move d/install into d/rules's dh_install line:
+    we install just 2 patterns, can do that directly in d/rules
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sun, 01 May 2022 02:23:45 +0300
+
+seabios (1.15.0-1) unstable; urgency=medium
+
+  * New upstream release:
+   * Improved support for USB devices with multiple interfaces.
+   * Support for USB XHCI devices using direct MMIO access (instead of PCI).
+   * NVMe improvements.
+   * Increased "f-segment" RAM allocations for BIOS tables.
+   * Several bug fixes and code cleanups.
+  * Update Standards-Version to 4.6.0 (no changes)
+  * Stop breaking pre-historic (0.14) qemu
+  * Stop building qemu optionrom which is built on qemy itself
+    since qemu 3.1 (buster)
+
+ -- Michael Tokarev <mjt@tls.msk.ru>  Sun, 05 Dec 2021 12:58:22 +0300
+
 seabios (1.14.0-2) unstable; urgency=medium
 
   * install vgabios-ramfb.bin, not romfb

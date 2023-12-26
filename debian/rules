@@ -4,17 +4,12 @@
 # of different targets in this d/rules but allow running parallel submakes
 .NOTPARALLEL:
 
-MAKEVARS = PYTHON="python3 -B" EXTRAVERSION="-${DEB_VERSION_RELEASE}"
-
-dpkg_late_eval ?= $(or $(value DPKG_CACHE_$(1)),$(eval DPKG_CACHE_$(1) := $(shell $(2)))$(value DPKG_CACHE_$(1)))
-DEB_VERSION = $(call dpkg_late_eval,DEB_VERSION,dpkg-parsechangelog -SVersion)
-# everything after last minus sign
-DEB_VERSION_RELEASE = $(call dpkg_late_eval,DEB_VERSION_RELEASE,echo '$(DEB_VERSION)' | sed -e 's/^.*-//')
+MAKEVARS = PYTHON="python3 -B"
 
 VGABIOSES = ati bochs-display cirrus stdvga virtio vmware qxl isavga ramfb
 VGABIOS_TARGETS = $(addprefix build/vgabios-, $(addsuffix .bin, $(VGABIOSES)))
-BIOS_TARGETS = build/bios.bin build/bios-256k.bin ${VGABIOS_TARGETS}
-BUILD_TARGETS = $(BIOS_TARGETS) build/optionrom-stamp
+BIOS_TARGETS = build/bios.bin build/bios-256k.bin build/bios-microvm.bin ${VGABIOS_TARGETS}
+BUILD_TARGETS = $(BIOS_TARGETS)
 
 build build-indep: $(BUILD_TARGETS)
 
@@ -27,79 +22,58 @@ define build-bios
 set -e; \
 if [ ! -e $(basename $@)/.config.old ]; then \
  rm -rf $(basename $@); mkdir -p $(basename $@); \
- for x in $2; do \
-  case $$x in \
-   (*=n) echo "# CONFIG_$${x%=*} is not set";; \
-   (*) echo CONFIG_$$x;; \
-  esac; \
- done > $(basename $@)/.config; \
- $(MAKE) ${MAKEVARS} KCONFIG_CONFIG=$(CURDIR)/$(basename $@)/.config OUT=$(basename $@)/ oldnoconfig; \
+ for x in $2; do echo CONFIG_$$x; done > $(basename $@)/.config; \
+ $(MAKE) ${MAKEVARS} KCONFIG_CONFIG=${CURDIR}/$(basename $@)/.config OUT=$(basename $@)/ oldnoconfig; \
 fi
-+$(MAKE) ${MAKEVARS} KCONFIG_CONFIG=$(CURDIR)/$(basename $@)/.config OUT=$(basename $@)/ $(basename $@)/$1.bin
++$(MAKE) ${MAKEVARS} $$(cat build/env) KCONFIG_CONFIG=${CURDIR}/$(basename $@)/.config OUT=$(basename $@)/ $(basename $@)/$1.bin
 rm -f $@
 ln $(basename $@)/$1.bin $@
 endef
 
-build/bios.bin:
-# A stripped-down version of bios, to fit in 128Kb, for qemu <= 1.7
-	$(call build-bios,bios,QEMU=y ROM_SIZE=128 PVSCSI=n ATA_DMA=n BOOTSPLASH=n XEN=n USB_OHCI=n USB_XHCI=n USB_UAS=n SDCARD=n TCGBIOS=n MPT_SCSI=n ESP_SCSI=n MEGASAS=n NVME=n USE_SMM=n VGAHOOKS=n HOST_BIOS_GEOMETRY=n ACPI_PARSE=n)
-build/bios-256k.bin:
-	$(call build-bios,bios,QEMU=y ROM_SIZE=256)
-
-${BIOS_TARGETS}: build/env-stamp
-build/env-stamp:
-# upstream checks for .git and .version in scripts/buildversion.py
-# .version comes in upstream tarball, and .git should not be there
-	[ ! -d .git ] || { echo "Directory .git exists, aborting" >&2; exit 1; }
-	[ -f .version ] || echo ${DEB_VERSION} | sed 's/-.*//' > .version
+${BIOS_TARGETS}: build/env
+build/env:
 	mkdir -p build
 # regenerate shipped .hex files (iasl-compiled .dsl)
 	rm -f src/fw/*.hex
-# make iasl unnecessarily generates .config
-	${MAKE} ${MAKEVARS} OUT=build/ KCONFIG_CONFIG=$(CURDIR)/build/.fakeconfig iasl
-	touch $@
+# `make iasl' unnecessarily generates .config
+	${MAKE} ${MAKEVARS} OUT=build/ KCONFIG_CONFIG=${CURDIR}/build/.fakeconfig iasl
+	echo "EXTRAVERSION=-debian-$$(dpkg-parsechangelog -SVersion)" > $@
 
-build/vgabios-ati.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_ATI=y VGA_PCI=y)
-build/vgabios-bochs-display.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y DISPLAY_BOCHS=y VGA_PCI=y)
-build/vgabios-cirrus.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_CIRRUS=y VGA_PCI=y)
-build/vgabios-stdvga.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_BOCHS=y VGA_PCI=y)
-build/vgabios-virtio.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_BOCHS=y VGA_PCI=y \
-		OVERRIDE_PCI_ID=y VGA_VID=0x1af4 VGA_DID=0x1050)
-build/vgabios-vmware.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_BOCHS=y VGA_PCI=y \
-		OVERRIDE_PCI_ID=y VGA_VID=0x15ad VGA_DID=0x0405)
-build/vgabios-qxl.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_BOCHS=y VGA_PCI=y \
-		OVERRIDE_PCI_ID=y VGA_VID=0x1b36 VGA_DID=0x0100)
-build/vgabios-isavga.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_BOCHS=y VGA_PCI=n)
-build/vgabios-ramfb.bin:
-	$(call build-bios,vgabios,BUILD_VGABIOS=y VGA_RAMFB=y VGA_PCI=n)
+# A stripped-down version of bios, to fit in 128Kb, for qemu <= 1.7
+bios-config = QEMU=y ROM_SIZE=128 PVSCSI=n ATA_DMA=n BOOTSPLASH=n XEN=n USB_OHCI=n USB_XHCI=n USB_UAS=n SDCARD=n TCGBIOS=n MPT_SCSI=n ESP_SCSI=n MEGASAS=n NVME=n USE_SMM=n VGAHOOKS=n HOST_BIOS_GEOMETRY=n ACPI_PARSE=n \
+  LSI_SCSI=n DEBUG_IO=n
+bios-256k-config = QEMU=y ROM_SIZE=256
+bios-microvm-config = QEMU=y ROM_SIZE=128 XEN=n BOOTSPLASH=n ATA=n AHCI=n SDCARD=n PVSCSI=n ESP_SCSI=n LSI_SCSI=n MEGASAS=n MPT_SCSI=n FLOPPY=n FLASH_FLOPPY=n NVME=n PS2PORT=n USB=n LPT=n RTC_TIMER=n USE_SMM=n PMTIMER=n TCGBIOS=n HARDWARE_IRQ=n ACPI_PARSE=y
 
-build/optionrom-stamp:
-	$(MAKE) -C debian/optionrom/
-	chmod -x debian/optionrom/*.bin
-	ln -s kvmvapic.bin debian/optionrom/vapic.bin
-	mkdir -p $(dir $@) && touch $@
+# % does not match empty string hence "bio" not "bios"
+build/bio%.bin:
+	@$(if ${bio$*-config},,$(error no config for bio$* is set))
+	$(call build-bios,bios,${bio$*-config})
+
+vgabios-ati-config    = VGA_ATI=y VGA_PCI=y
+vgabios-cirrus-config = VGA_CIRRUS=y VGA_PCI=y
+vgabios-stdvga-config = VGA_BOCHS=y VGA_PCI=y
+vgabios-virtio-config = VGA_BOCHS=y VGA_PCI=y OVERRIDE_PCI_ID=y VGA_VID=0x1af4 VGA_DID=0x1050
+vgabios-vmware-config = VGA_BOCHS=y VGA_PCI=y OVERRIDE_PCI_ID=y VGA_VID=0x15ad VGA_DID=0x0405
+vgabios-qxl-config    = VGA_BOCHS=y VGA_PCI=y OVERRIDE_PCI_ID=y VGA_VID=0x1b36 VGA_DID=0x0100
+vgabios-isavga-config = VGA_BOCHS=y VGA_PCI=n
+vgabios-ramfb-config  = VGA_RAMFB=y VGA_PCI=n
+vgabios-bochs-display-config = DISPLAY_BOCHS=y VGA_PCI=y
+
+build/vgabios-%.bin:
+	@$(if ${vgabios-$*-config},,$(error no config for vgabios-$* is set))
+	$(call build-bios,vgabios,BUILD_VGABIOS=y ${vgabios-$*-config})
 
 clean:
-	dh_testdir
-	rm -rf build/
-	rm -f src/fw/*.hex
-	$(MAKE) -C debian/optionrom/ clean
-	dh_clean
+	dh_clean build/ src/fw/*.hex
 
 install install-indep: build-indep
 	dh_testdir
 	dh_testroot
 	dh_prep
-	dh_installdirs
-	dh_install
+	dh_install build/*.bin build/src/fw/*dsdt.aml usr/share/seabios/
+# compatibility symlink for qemu, #1024382
+	dh_link usr/share/seabios/vgabios-isavga.bin usr/share/seabios/vgabios.bin
 
 binary binary-indep: install-indep
 	dh_testdir
@@ -107,8 +81,7 @@ binary binary-indep: install-indep
 	dh_installdocs
 	dh_installman
 	dh_installchangelogs
-	dh_link
-	dh_strip
+	dh_strip_nondeterminism
 	dh_compress
 	dh_fixperms
 	dh_installdeb

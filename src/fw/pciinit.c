@@ -46,11 +46,16 @@ static const char *region_type_name[] = {
     [ PCI_REGION_TYPE_PREFMEM ] = "prefmem",
 };
 
+// Memory ranges exported to legacy ACPI type table generation
 u64 pcimem_start   = BUILD_PCIMEM_START;
 u64 pcimem_end     = BUILD_PCIMEM_END;
 u64 pcimem64_start = BUILD_PCIMEM64_START;
 u64 pcimem64_end   = BUILD_PCIMEM64_END;
-u64 pci_io_low_end = 0xa000;
+
+// Resource allocation limits
+static u64 pci_io_low_end = 0xa000;
+static u64 pci_mem64_top  = 0;
+static u32 pci_pad_mem64  = 0;
 
 struct pci_region_entry {
     struct pci_device *dev;
@@ -793,7 +798,13 @@ pci_region_create_entry(struct pci_bus *bus, struct pci_device *dev,
     return entry;
 }
 
-static int pci_bus_hotplug_support(struct pci_bus *bus, u8 pcie_cap)
+typedef enum hotplug_type_t {
+    HOTPLUG_NO_SUPPORTED = 0,
+    HOTPLUG_PCIE,
+    HOTPLUG_SHPC
+} hotplug_type_t;
+
+static hotplug_type_t pci_bus_hotplug_support(struct pci_bus *bus, u8 pcie_cap)
 {
     u8 shpc_cap;
 
@@ -802,6 +813,10 @@ static int pci_bus_hotplug_support(struct pci_bus *bus, u8 pcie_cap)
                                           pcie_cap + PCI_EXP_FLAGS);
         u8 port_type = ((pcie_flags & PCI_EXP_FLAGS_TYPE) >>
                        (__builtin_ffs(PCI_EXP_FLAGS_TYPE) - 1));
+
+        if (port_type == PCI_EXP_TYPE_PCI_BRIDGE)
+            goto check_shpc;
+
         u8 downstream_port = (port_type == PCI_EXP_TYPE_DOWNSTREAM) ||
                              (port_type == PCI_EXP_TYPE_ROOT_PORT);
         /*
@@ -815,11 +830,13 @@ static int pci_bus_hotplug_support(struct pci_bus *bus, u8 pcie_cap)
          */
         u16 slot_implemented = pcie_flags & PCI_EXP_FLAGS_SLOT;
 
-        return downstream_port && slot_implemented;
+        return downstream_port && slot_implemented ?
+            HOTPLUG_PCIE : HOTPLUG_NO_SUPPORTED;
     }
 
+check_shpc:
     shpc_cap = pci_find_capability(bus->bus_dev->bdf, PCI_CAP_ID_SHPC, 0);
-    return !!shpc_cap;
+    return !!shpc_cap ? HOTPLUG_SHPC : HOTPLUG_NO_SUPPORTED;
 }
 
 /* Test whether bridge support forwarding of transactions
@@ -904,7 +921,7 @@ static int pci_bios_check_devices(struct pci_bus *busses)
         u8 pcie_cap = pci_find_capability(bdf, PCI_CAP_ID_EXP, 0);
         u8 qemu_cap = pci_find_resource_reserve_capability(bdf);
 
-        int hotplug_support = pci_bus_hotplug_support(s, pcie_cap);
+        hotplug_type_t hotplug_support = pci_bus_hotplug_support(s, pcie_cap);
         for (type = 0; type < PCI_REGION_TYPE_COUNT; type++) {
             u64 align = (type == PCI_REGION_TYPE_IO) ?
                 PCI_BRIDGE_IO_MIN : PCI_BRIDGE_MEM_MIN;
@@ -948,8 +965,15 @@ static int pci_bios_check_devices(struct pci_bus *busses)
             if (pci_region_align(&s->r[type]) > align)
                  align = pci_region_align(&s->r[type]);
             u64 sum = pci_region_sum(&s->r[type]);
-            int resource_optional = pcie_cap && (type == PCI_REGION_TYPE_IO);
-            if (!sum && hotplug_support && !resource_optional)
+            int is64 = pci_bios_bridge_region_is64(&s->r[type],
+                                                   s->bus_dev, type);
+            int resource_optional = 0;
+            if (hotplug_support == HOTPLUG_PCIE)
+                resource_optional = pcie_cap && (type == PCI_REGION_TYPE_IO);
+            if (hotplug_support && pci_pad_mem64 && is64
+                && (type == PCI_REGION_TYPE_PREFMEM))
+                align = pci_mem64_top >> 11;
+            if (align > sum && hotplug_support && !resource_optional)
                 sum = align; /* reserve min size for hot-plug */
             if (size > sum) {
                 dprintf(1, "PCI: QEMU resource reserve cap: "
@@ -961,8 +985,6 @@ static int pci_bios_check_devices(struct pci_bus *busses)
             } else {
                 size = ALIGN(sum, align);
             }
-            int is64 = pci_bios_bridge_region_is64(&s->r[type],
-                                            s->bus_dev, type);
             // entry->bar is -1 if the entry represents a bridge region
             struct pci_region_entry *entry = pci_region_create_entry(
                 parent, s->bus_dev, -1, size, align, type, is64);
@@ -1094,7 +1116,7 @@ static void pci_bios_map_devices(struct pci_bus *busses)
         panic("PCI: out of I/O address space\n");
 
     dprintf(1, "PCI: 32: %016llx - %016llx\n", pcimem_start, pcimem_end);
-    if (pci_bios_init_root_regions_mem(busses)) {
+    if (pci_pad_mem64 || pci_bios_init_root_regions_mem(busses)) {
         struct pci_region r64_mem, r64_pref;
         r64_mem.list.first = NULL;
         r64_pref.list.first = NULL;
@@ -1114,6 +1136,17 @@ static void pci_bios_map_devices(struct pci_bus *busses)
         r64_mem.base = le64_to_cpu(romfile_loadint("etc/reserved-memory-end", 0));
         if (r64_mem.base < 0x100000000LL + RamSizeOver4G)
             r64_mem.base = 0x100000000LL + RamSizeOver4G;
+        if (pci_mem64_top) {
+            u64 size = (ALIGN(sum_mem, (1LL<<30)) +
+                        ALIGN(sum_pref, (1LL<<30)));
+            if (pci_pad_mem64)
+                size = ALIGN(size, pci_mem64_top >> 3);
+            if (r64_mem.base < pci_mem64_top - size) {
+                r64_mem.base = pci_mem64_top - size;
+            }
+            if (e820_is_used(r64_mem.base, size))
+                r64_mem.base -= size;
+        }
         r64_mem.base = ALIGN(r64_mem.base, align_mem);
         r64_mem.base = ALIGN(r64_mem.base, (1LL<<30));    // 1G hugepage
         r64_pref.base = r64_mem.base + sum_mem;
@@ -1151,6 +1184,19 @@ pci_setup(void)
         return;
 
     dprintf(3, "pci setup\n");
+
+    if (CPUPhysBits) {
+        pci_mem64_top = 1LL << CPUPhysBits;
+        if (CPUPhysBits > 46) {
+            // Old linux kernels have trouble dealing with more than 46
+            // phys-bits, so avoid that for now.  Seems to be a bug in the
+            // virtio-pci driver.  Reported: centos-7, ubuntu-18.04
+            pci_mem64_top = 1LL << 46;
+        }
+    }
+
+    if (CPUPhysBits >= 36 && CPULongMode && RamSizeOver4G)
+        pci_pad_mem64 = 1;
 
     dprintf(1, "=== PCI bus & bridge init ===\n");
     if (pci_probe_host() != 0) {

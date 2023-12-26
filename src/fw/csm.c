@@ -19,7 +19,7 @@
 #include "std/acpi.h" // RSDP_SIGNATURE
 #include "std/bda.h" // struct bios_data_area_s
 #include "std/optionrom.h" // struct rom_header
-#include "util.h" // copy_smbios
+#include "util.h" // copy_smbios_21
 
 #define UINT8 u8
 #define UINT16 u16
@@ -150,9 +150,9 @@ handle_csm_0002(struct bregs *regs)
     for (i=0; i < csm_compat_table.E820Length / sizeof(struct e820entry); i++)
         e820_add(p[i].start, p[i].size, p[i].type);
 
-    if (csm_init_table->HiPmmMemorySizeInBytes > BUILD_MAX_HIGHTABLE) {
+    if (csm_init_table->HiPmmMemorySizeInBytes > BUILD_MIN_HIGHTABLE) {
         u32 hi_pmm_end = csm_init_table->HiPmmMemory + csm_init_table->HiPmmMemorySizeInBytes;
-        e820_add(hi_pmm_end - BUILD_MAX_HIGHTABLE, BUILD_MAX_HIGHTABLE, E820_RESERVED);
+        e820_add(hi_pmm_end - BUILD_MIN_HIGHTABLE, BUILD_MIN_HIGHTABLE, E820_RESERVED);
     }
 
     // For PCIBIOS 1ab10e
@@ -172,8 +172,8 @@ handle_csm_0002(struct bregs *regs)
 
     // SMBIOS table needs to be copied into the f-seg
     // XX: OVMF doesn't seem to set SmbiosTableLength so don't check it
-    if (csm_boot_table->SmbiosTable && !SMBiosAddr)
-        copy_smbios((void *)csm_boot_table->SmbiosTable);
+    if (csm_boot_table->SmbiosTable)
+        copy_smbios_21((void *)csm_boot_table->SmbiosTable);
 
     // MPTABLE is just there; we don't care where.
 

@@ -101,7 +101,6 @@ struct nvme_ctrl {
     struct nvme_cq admin_cq;
 
     u32 ns_count;
-    struct nvme_namespace *ns;
 
     struct nvme_sq io_sq;
     struct nvme_cq io_cq;
@@ -117,9 +116,7 @@ struct nvme_namespace {
 
     u32 block_size;
     u32 metadata_size;
-
-    /* Page aligned buffer of size NVME_PAGE_SIZE. */
-    char *dma_buffer;
+    u32 max_req_size;
 };
 
 /* Data structures for NVMe admin identify commands */
@@ -131,7 +128,12 @@ struct nvme_identify_ctrl {
     char mn[40];
     char fr[8];
 
-    char _boring[516 - 72];
+    u8 rab;
+    u8 ieee[3];
+    u8 cmic;
+    u8 mdts;
+
+    char _boring[516 - 78];
 
     u32 nn;                     /* number of namespaces */
 };
@@ -144,7 +146,6 @@ struct nvme_lba_format {
     u16 ms;
     u8  lbads;
     u8  rp;
-    u8  res;
 };
 
 struct nvme_identify_ns {
@@ -189,6 +190,7 @@ union nvme_identify {
 #define NVME_CQE_DW3_P (1U << 16)
 
 #define NVME_PAGE_SIZE 4096
+#define NVME_PAGE_MASK ~(NVME_PAGE_SIZE - 1)
 
 /* Length for the queue entries. */
 #define NVME_SQE_SIZE_LOG 6
